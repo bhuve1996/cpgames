@@ -9,3 +9,8 @@ build
 coverage
 .turbo
 *.tsbuildinfo
+
+# Accidental tsc output in package src folders
+packages/*/src/**/*.js
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.js.map

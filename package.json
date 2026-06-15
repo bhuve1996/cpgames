@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev": "node scripts/dev.mjs",
     "dev:web": "npm run dev -w @playground/web",
     "dev:api": "npm run dev -w @playground/api",
     "build": "npm run build -w @playground/shared && npm run build -w @playground/game-engine && npm run build -w @playground/api && npm run build -w @playground/web",

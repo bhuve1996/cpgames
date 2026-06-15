@@ -16,11 +16,7 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@playground/shared": ["../../packages/shared/src"],
-      "@playground/game-engine": ["../../packages/game-engine/src"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"]
 }
