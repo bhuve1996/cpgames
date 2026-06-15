@@ -4,7 +4,7 @@ import { CommunitiesService } from '../communities/communities.service';
 import { LeaderboardService } from '../leaderboard/leaderboard.service';
 import { createTriviaEngine, TriviaEngine } from '@playground/game-engine';
 import type { TriviaQuestion } from '@playground/shared';
-import { v4 as uuidv4 } from 'uuid';
+import { getTriviaPack } from '@playground/shared';
 
 @Injectable()
 export class GamesService {
@@ -162,6 +162,13 @@ export class GamesService {
     }
   }
 
+  async playNow(communityId: string, hostId: string, packId = 'general') {
+    const pack = getTriviaPack(packId) ?? getTriviaPack('general')!;
+    return this.createSession(communityId, hostId, {
+      questions: pack.questions,
+    });
+  }
+
   async createFromEvent(eventId: string, hostId: string) {
     const event = await this.prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw new NotFoundException('Event not found');
@@ -170,37 +177,11 @@ export class GamesService {
     const quizConfig = event.quizConfig as { questions?: TriviaQuestion[] } | null;
     const questions = quizConfig?.questions?.length
       ? quizConfig.questions
-      : this.getDefaultQuestions();
+      : getTriviaPack('general')!.questions;
 
     return this.createSession(event.communityId, hostId, {
       eventId,
       questions,
     });
-  }
-
-  private getDefaultQuestions(): TriviaQuestion[] {
-    return [
-      {
-        id: uuidv4(),
-        question: 'What is the capital of France?',
-        options: ['London', 'Berlin', 'Paris', 'Madrid'],
-        correctIndex: 2,
-        timeLimitSeconds: 20,
-      },
-      {
-        id: uuidv4(),
-        question: 'Which planet is known as the Red Planet?',
-        options: ['Venus', 'Mars', 'Jupiter', 'Saturn'],
-        correctIndex: 1,
-        timeLimitSeconds: 20,
-      },
-      {
-        id: uuidv4(),
-        question: 'What year did the first iPhone launch?',
-        options: ['2005', '2006', '2007', '2008'],
-        correctIndex: 2,
-        timeLimitSeconds: 20,
-      },
-    ];
   }
 }

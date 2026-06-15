@@ -14,6 +14,7 @@ import { SOCKET_EVENTS } from '@playground/shared';
 import { ChannelsService } from '../channels/channels.service';
 import { GamesService } from '../games/games.service';
 import { CommunitiesService } from '../communities/communities.service';
+import { PrismaService } from '../prisma/prisma.module';
 
 interface AuthenticatedSocket extends Socket {
   user?: { id: string; displayName: string; avatarUrl?: string | null; email: string };
@@ -37,6 +38,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     private channels: ChannelsService,
     private games: GamesService,
     private communities: CommunitiesService,
+    private prisma: PrismaService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -54,12 +56,17 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         secret: this.config.get<string>('JWT_SECRET') ?? 'dev-secret',
       });
 
-      client.user = {
-        id: payload.sub,
-        email: payload.email,
-        displayName: (client.handshake.auth?.displayName as string) ?? payload.email.split('@')[0],
-        avatarUrl: client.handshake.auth?.avatarUrl as string | undefined,
-      };
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, email: true, displayName: true, avatarUrl: true },
+      });
+
+      if (!user) {
+        client.disconnect();
+        return;
+      }
+
+      client.user = user;
     } catch {
       client.disconnect();
     }
@@ -110,12 +117,13 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { sessionId: string },
   ) {
-    if (!client.user) return;
-    const state = await this.games.joinSession(data.sessionId, client.user);
-    const room = `game:${data.sessionId}`;
-    client.join(room);
-    this.server.to(room).emit(SOCKET_EVENTS.GAME_STATE, state);
-    return state;
+    return this.runGameAction(client, data.sessionId, async () => {
+      const state = await this.games.joinSession(data.sessionId, client.user!);
+      const room = `game:${data.sessionId}`;
+      client.join(room);
+      this.server.to(room).emit(SOCKET_EVENTS.GAME_STATE, state);
+      return state;
+    });
   }
 
   @SubscribeMessage(SOCKET_EVENTS.GAME_START)
@@ -123,12 +131,13 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { sessionId: string },
   ) {
-    if (!client.user) return;
-    const engine = await this.games.loadEngine(data.sessionId);
-    const state = engine.start(client.user.id);
-    await this.games.persistState(data.sessionId);
-    this.broadcastGameState(data.sessionId, state);
-    return state;
+    return this.runGameAction(client, data.sessionId, async () => {
+      const engine = await this.games.loadEngine(data.sessionId);
+      const state = engine.start(client.user!.id);
+      await this.games.persistState(data.sessionId);
+      this.broadcastGameState(data.sessionId, state);
+      return state;
+    });
   }
 
   @SubscribeMessage(SOCKET_EVENTS.GAME_ANSWER)
@@ -136,11 +145,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { sessionId: string; answerIndex: number },
   ) {
-    if (!client.user) return;
-    const engine = await this.games.loadEngine(data.sessionId);
-    const state = engine.submitAnswer(client.user.id, data.answerIndex);
-    this.broadcastGameState(data.sessionId, state);
-    return state;
+    return this.runGameAction(client, data.sessionId, async () => {
+      const engine = await this.games.loadEngine(data.sessionId);
+      const state = engine.submitAnswer(client.user!.id, data.answerIndex);
+      this.broadcastGameState(data.sessionId, state);
+      return state;
+    });
   }
 
   @SubscribeMessage(SOCKET_EVENTS.GAME_NEXT)
@@ -148,21 +158,38 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { sessionId: string; action: 'reveal' | 'next' },
   ) {
-    if (!client.user) return;
-    const engine = await this.games.loadEngine(data.sessionId);
-    let state;
-    if (data.action === 'reveal') {
-      state = engine.reveal(client.user.id);
-    } else {
-      state = engine.nextQuestion(client.user.id);
-    }
-    await this.games.persistState(data.sessionId);
-    this.broadcastGameState(data.sessionId, state);
-    return state;
+    return this.runGameAction(client, data.sessionId, async () => {
+      const engine = await this.games.loadEngine(data.sessionId);
+      const state =
+        data.action === 'reveal'
+          ? engine.reveal(client.user!.id)
+          : engine.nextQuestion(client.user!.id);
+      await this.games.persistState(data.sessionId);
+      this.broadcastGameState(data.sessionId, state);
+      return state;
+    });
   }
 
   private broadcastGameState(sessionId: string, state: object) {
     this.server.to(`game:${sessionId}`).emit(SOCKET_EVENTS.GAME_STATE, state);
+  }
+
+  private emitGameError(client: AuthenticatedSocket, sessionId: string, err: unknown) {
+    const message = err instanceof Error ? err.message : 'Game action failed';
+    client.emit(SOCKET_EVENTS.GAME_ERROR, { sessionId, message });
+  }
+
+  private async runGameAction(
+    client: AuthenticatedSocket,
+    sessionId: string,
+    action: () => Promise<object> | object,
+  ) {
+    if (!client.user) return;
+    try {
+      return await action();
+    } catch (err) {
+      this.emitGameError(client, sessionId, err);
+    }
   }
 
   private trackPresence(room: string, userId: string) {

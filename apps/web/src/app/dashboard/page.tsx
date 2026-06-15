@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
+import { getErrorMessage } from '@/lib/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,7 +43,7 @@ export default function DashboardPage() {
       });
       router.push(`/c/${community.slug}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create community');
+      alert(getErrorMessage(err, 'Failed to create community'));
     } finally {
       setCreating(false);
     }
@@ -106,14 +107,19 @@ export default function DashboardPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {communities.map((c) => (
-              <Link key={c.id} href={`/c/${c.slug}`}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
-                  <CardHeader>
-                    <CardTitle>{c.name}</CardTitle>
-                    <CardDescription>{c.memberCount} members · {c.visibility}</CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
+              <div key={c.id} className="space-y-2">
+                <Link href={`/c/${c.slug}`}>
+                  <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
+                    <CardHeader>
+                      <CardTitle>{c.name}</CardTitle>
+                      <CardDescription>{c.memberCount} members · {c.visibility}</CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+                <Link href={`/c/${c.slug}`}>
+                  <Button className="w-full gap-2" size="sm">🎮 Play Trivia Now</Button>
+                </Link>
+              </div>
             ))}
           </div>
         )}

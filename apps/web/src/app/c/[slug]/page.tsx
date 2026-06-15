@@ -10,13 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatPanel } from '@/components/chat-panel';
 import { EventsPanel } from '@/components/events-panel';
 import { PollsPanel } from '@/components/polls-panel';
-import { AiQuizPanel, LeaderboardPanel } from '@/components/quiz-leaderboard';
+import { PlayPanel } from '@/components/play-panel';
+import { LeaderboardPanel } from '@/components/quiz-leaderboard';
 import { VoiceRoom } from '@/components/voice-room';
-import type { Channel, Community, TriviaQuiz } from '@playground/shared';
+import type { Channel, Community } from '@playground/shared';
 import { ArrowLeft, Hash, Mic, Gamepad2, Copy } from 'lucide-react';
 import { connectSocket } from '@/lib/socket';
 
-type Tab = 'chat' | 'events' | 'polls' | 'quiz' | 'leaderboard';
+type Tab = 'play' | 'chat' | 'events' | 'polls' | 'leaderboard';
 
 export default function CommunityPage() {
   const params = useParams();
@@ -25,7 +26,7 @@ export default function CommunityPage() {
   const router = useRouter();
   const [community, setCommunity] = useState<(Community & { channels: Channel[] }) | null>(null);
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
-  const [tab, setTab] = useState<Tab>('events');
+  const [tab, setTab] = useState<Tab>('play');
   const [inviteUrl, setInviteUrl] = useState('');
 
   useEffect(() => {
@@ -59,11 +60,6 @@ export default function CommunityPage() {
     navigator.clipboard.writeText(fullUrl);
   };
 
-  const saveQuizToEvent = async (quiz: TriviaQuiz) => {
-    alert('Quiz saved! Create an event and attach this quiz when hosting trivia.');
-    localStorage.setItem(`quiz-${community?.id}`, JSON.stringify(quiz));
-  };
-
   if (loading || !community) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -90,13 +86,13 @@ export default function CommunityPage() {
 
       <div className="flex-1 container mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
         <aside className="lg:w-48 shrink-0 space-y-1">
-          {(['events', 'chat', 'polls', 'quiz', 'leaderboard'] as Tab[]).map((t) => (
+          {(['play', 'events', 'chat', 'polls', 'leaderboard'] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm capitalize ${tab === t ? 'bg-primary/20 text-primary' : 'hover:bg-secondary'}`}
+              className={`w-full text-left px-3 py-2 rounded-md text-sm capitalize font-medium ${tab === t ? 'bg-primary/20 text-primary' : 'hover:bg-secondary'}`}
             >
-              {t}
+              {t === 'play' ? '🎮 Play' : t}
             </button>
           ))}
           <div className="pt-4 border-t border-border mt-4">
@@ -124,6 +120,8 @@ export default function CommunityPage() {
             </Card>
           )}
 
+          {tab === 'play' && <PlayPanel communityId={community.id} slug={slug} />}
+
           {tab === 'events' && (
             <div className="space-y-4">
               <EventsPanel communityId={community.id} slug={slug} />
@@ -132,7 +130,6 @@ export default function CommunityPage() {
           )}
 
           {tab === 'polls' && <PollsPanel communityId={community.id} />}
-          {tab === 'quiz' && <AiQuizPanel communityId={community.id} onQuizReady={saveQuizToEvent} />}
           {tab === 'leaderboard' && <LeaderboardPanel communityId={community.id} />}
         </main>
       </div>

@@ -24,8 +24,14 @@ export async function api<T>(
   });
 
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message ?? 'Request failed');
+    const body = await res.json().catch(() => ({} as Record<string, unknown>));
+    const msg = body.message;
+    const text = Array.isArray(msg)
+      ? msg.map(String).join(', ')
+      : typeof msg === 'string'
+        ? msg
+        : res.statusText;
+    throw new Error(text || 'Request failed');
   }
 
   return res.json();
