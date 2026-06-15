@@ -1,0 +1,296 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CommunityVisibility {
+  public
+  private
+  invite
+}
+
+enum MemberRole {
+  owner
+  admin
+  member
+}
+
+enum ChannelType {
+  text
+  voice
+  activity
+}
+
+enum RsvpStatus {
+  going
+  maybe
+  not_going
+}
+
+enum GameSessionState {
+  lobby
+  question
+  reveal
+  finished
+}
+
+enum AiGenerationStatus {
+  pending
+  completed
+  failed
+}
+
+enum LeaderboardPeriod {
+  all_time
+  weekly
+  event
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?
+  displayName  String
+  avatarUrl    String?
+  googleId     String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedCommunities Community[]       @relation("CommunityOwner")
+  memberships      CommunityMember[]
+  messages         Message[]
+  hostedEvents     Event[]           @relation("EventHost")
+  eventRsvps       EventRsvp[]
+  pollVotes        PollVote[]
+  gamePlayers      GamePlayer[]
+  leaderboardEntries LeaderboardEntry[]
+  aiGenerations    AiGeneration[]
+  refreshTokens    RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Community {
+  id          String              @id @default(uuid())
+  name        String
+  slug        String              @unique
+  description String?
+  visibility  CommunityVisibility @default(private)
+  ownerId     String
+  settings    Json                @default("{}")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  owner    User              @relation("CommunityOwner", fields: [ownerId], references: [id])
+  members  CommunityMember[]
+  channels Channel[]
+  events   Event[]
+  polls    Poll[]
+  invites  CommunityInvite[]
+  gameSessions GameSession[]
+  leaderboardEntries LeaderboardEntry[]
+
+  @@map("communities")
+}
+
+model CommunityMember {
+  communityId String
+  userId      String
+  role        MemberRole @default(member)
+  joinedAt    DateTime   @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([communityId, userId])
+  @@map("community_members")
+}
+
+model CommunityInvite {
+  id          String   @id @default(uuid())
+  communityId String
+  token       String   @unique
+  createdById String
+  maxUses     Int      @default(0)
+  useCount    Int      @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+
+  @@map("community_invites")
+}
+
+model Channel {
+  id          String      @id @default(uuid())
+  communityId String
+  name        String
+  type        ChannelType @default(text)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  polls     Poll[]
+
+  @@unique([communityId, name])
+  @@map("channels")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  channelId String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+
+  channel Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, createdAt])
+  @@map("messages")
+}
+
+model Event {
+  id          String    @id @default(uuid())
+  communityId String
+  title       String
+  description String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  hostId      String
+  gameType    String?
+  location    String?
+  quizConfig  Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  community    Community     @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  host         User          @relation("EventHost", fields: [hostId], references: [id])
+  rsvps        EventRsvp[]
+  gameSessions GameSession[]
+
+  @@index([communityId, startsAt])
+  @@map("events")
+}
+
+model EventRsvp {
+  eventId   String
+  userId    String
+  status    RsvpStatus @default(going)
+  createdAt DateTime   @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+  @@map("event_rsvps")
+}
+
+model Poll {
+  id          String    @id @default(uuid())
+  communityId String
+  channelId   String?
+  question    String
+  options     Json
+  closesAt    DateTime?
+  createdAt   DateTime  @default(now())
+
+  community Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  channel   Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  votes     PollVote[]
+
+  @@map("polls")
+}
+
+model PollVote {
+  pollId    String
+  userId    String
+  optionId  String
+  createdAt DateTime @default(now())
+
+  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([pollId, userId])
+  @@map("poll_votes")
+}
+
+model GameSession {
+  id                   String           @id @default(uuid())
+  eventId              String?
+  communityId          String
+  gameType             String           @default("trivia")
+  state                GameSessionState @default(lobby)
+  hostId               String
+  currentQuestionIndex Int              @default(-1)
+  config               Json             @default("{}")
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  event     Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  community Community    @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  players   GamePlayer[]
+
+  @@map("game_sessions")
+}
+
+model GamePlayer {
+  sessionId String
+  userId    String
+  score     Int      @default(0)
+  joinedAt  DateTime @default(now())
+
+  session GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, userId])
+  @@map("game_players")
+}
+
+model LeaderboardEntry {
+  id          String            @id @default(uuid())
+  communityId String
+  userId      String
+  period      LeaderboardPeriod @default(all_time)
+  eventId     String?
+  points      Int               @default(0)
+  updatedAt   DateTime          @updatedAt
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId, period, eventId])
+  @@index([communityId, period, points])
+  @@map("leaderboard_entries")
+}
+
+model AiGeneration {
+  id        String             @id @default(uuid())
+  userId    String
+  type      String             @default("quiz")
+  prompt    String
+  output    Json?
+  status    AiGenerationStatus @default(pending)
+  createdAt DateTime           @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ai_generations")
+}
