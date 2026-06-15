@@ -119,6 +119,9 @@ export default function DashboardPage() {
                 <Link href={`/c/${c.slug}`}>
                   <Button className="w-full gap-2" size="sm">🎮 Play Trivia Now</Button>
                 </Link>
+                <Link href="/games">
+                  <Button variant="outline" className="w-full gap-2" size="sm">Explore all games</Button>
+                </Link>
               </div>
             ))}
           </div>

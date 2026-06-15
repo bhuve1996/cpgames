@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" fill="none">
+  <style>
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    @keyframes wiggle { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+    .f1 { animation: float 3s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+    .f2 { animation: float 3.5s ease-in-out infinite 0.5s; transform-origin: center; transform-box: fill-box; }
+    .w { animation: wiggle 2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  </style>
+  <rect width="320" height="180" rx="20" fill="url(#bg)"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="320" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7c3aed" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#ec4899" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <text x="40" y="100" font-size="48" class="f1"><®</text>
+  <text x="130" y="105" font-size="44" class="w">>à</text>
+  <text x="220" y="100" font-size="40" class="f2"><‰</text>
+  <text x="100" y="155" font-size="14" fill="#7c3aed" font-family="system-ui,sans-serif" font-weight="600">Pick a game · Play instantly</text>
+</svg>

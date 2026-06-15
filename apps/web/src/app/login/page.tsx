@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getApiUrl } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
+import { AnimatedBackground } from '@/components/animated-background';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -33,8 +34,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      <AnimatedBackground />
+      <Card className="w-full max-w-md relative z-10 animate-fade-in-up shadow-xl bg-card/90 backdrop-blur-sm">
         <CardHeader>
           <CardTitle>Welcome back</CardTitle>
           <CardDescription>Sign in to your Playground account</CardDescription>

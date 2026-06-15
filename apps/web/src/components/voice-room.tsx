@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Phase 2 — LiveKit voice rooms (backend: /livekit/token).
+ * Enable with FEATURES.voiceRooms in lib/features.ts.
+ */
 import { useEffect, useState } from 'react';
 import { LiveKitRoom, RoomAudioRenderer, ControlBar } from '@livekit/components-react';
 import '@livekit/components-styles';

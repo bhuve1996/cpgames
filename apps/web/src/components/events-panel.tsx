@@ -1,5 +1,6 @@
 'use client';
 
+/** Phase 2 — events & RSVPs (enable FEATURES.events in lib/features.ts). */
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';

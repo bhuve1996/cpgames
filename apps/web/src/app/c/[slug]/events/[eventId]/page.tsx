@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
+import { FEATURES } from '@/lib/features';
 import { connectSocket, SOCKET_EVENTS } from '@/lib/socket';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,6 +34,11 @@ export default function EventPage() {
   useEffect(() => {
     if (!loading && !user) router.push('/login');
   }, [loading, user, router]);
+
+  // Phase 2 — events UI hidden until FEATURES.events is enabled
+  useEffect(() => {
+    if (!FEATURES.events) router.replace(`/c/${slug}`);
+  }, [slug, router]);
 
   useEffect(() => {
     if (token) {
@@ -118,7 +124,7 @@ export default function EventPage() {
           </CardContent>
         </Card>
 
-        <VoiceRoom roomName={`event-${eventId}`} />
+        {FEATURES.voiceRooms && <VoiceRoom roomName={`event-${eventId}`} />}
 
         {sessionId && (
           <Card>

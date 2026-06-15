@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 200" fill="none">
+  <style>
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .b1 { animation: bounce 2s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+    .b2 { animation: bounce 2.4s ease-in-out infinite 0.3s; transform-origin: center; transform-box: fill-box; }
+    .b3 { animation: bounce 1.8s ease-in-out infinite 0.6s; transform-origin: center; transform-box: fill-box; }
+    .star { animation: pulse 1.5s ease-in-out infinite; }
+    .ring { animation: spin-slow 12s linear infinite; transform-origin: 140px 100px; }
+  </style>
+  <circle cx="140" cy="100" r="70" fill="#7c3aed" opacity="0.15" class="ring"/>
+  <rect x="70" y="75" width="140" height="70" rx="16" fill="#7c3aed"/>
+  <rect x="85" y="90" width="30" height="30" rx="8" fill="#ef4444" class="b1"/>
+  <rect x="125" y="90" width="30" height="30" rx="8" fill="#3b82f6" class="b2"/>
+  <rect x="165" y="90" width="30" height="30" rx="8" fill="#fbbf24" class="b3"/>
+  <rect x="105" y="128" width="70" height="10" rx="5" fill="white" opacity="0.7"/>
+  <text x="48" y="55" font-size="28" class="star">(</text>
+  <text x="210" y="60" font-size="24" class="b2"><¯</text>
+  <text x="215" y="155" font-size="22" class="b1"><Æ</text>
+</svg>

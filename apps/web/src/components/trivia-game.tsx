@@ -33,9 +33,9 @@ export function TriviaGame({
   const { user, token } = useAuth();
   const playerId = guest?.guestId ?? user?.id ?? null;
   const isGuest = !!guest;
-  const backHref = isGuest ? '/game' : `/c/${slug}`;
-  const playAgainHref = isGuest ? '/game' : `/c/${slug}/play`;
-  const communityHref = isGuest ? '/' : `/c/${slug}`;
+  const backHref = isGuest ? '/games' : `/c/${slug}`;
+  const playAgainHref = isGuest ? '/games/trivia' : `/c/${slug}/play`;
+  const communityHref = isGuest ? '/games' : `/c/${slug}`;
   const [gameState, setGameState] = useState<GameSession | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -190,7 +190,7 @@ export function TriviaGame({
         {/* LOBBY */}
         {gameState.state === 'lobby' && (
           <div className="flex-1 flex flex-col items-center justify-center gap-6 text-center">
-            <div className="text-6xl">🎮</div>
+            <div className="text-6xl animate-bounce">🎮</div>
             <div>
               <h2 className="text-2xl font-bold">Game Lobby</h2>
               <p className="text-muted-foreground mt-1">
@@ -315,7 +315,7 @@ export function TriviaGame({
         {/* FINISHED */}
         {gameState.state === 'finished' && (
           <div className="flex-1 flex flex-col items-center gap-6 py-8">
-            <div className="text-6xl">🏆</div>
+            <div className="text-6xl animate-pulse-soft">🏆</div>
             <h2 className="text-3xl font-bold">Game Over!</h2>
 
             <div className="w-full space-y-3">
@@ -341,7 +341,7 @@ export function TriviaGame({
                 <Button variant="outline" className="w-full">Play Again</Button>
               </Link>
               <Link href={communityHref} className="flex-1">
-                <Button className="w-full">{isGuest ? 'Home' : 'Back to Community'}</Button>
+                <Button className="w-full">{isGuest ? 'More games' : 'Back to Community'}</Button>
               </Link>
             </div>
           </div>

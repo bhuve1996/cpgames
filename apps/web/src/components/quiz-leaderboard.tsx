@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Phase 2 — AI quiz generator UI (backend: /ai/quiz/*).
+ * Enable with FEATURES.aiQuiz in lib/features.ts.
+ */
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
@@ -89,6 +93,7 @@ export function AiQuizPanel({
   );
 }
 
+/** Phase 2 — community leaderboard (enable FEATURES.communityLeaderboard in lib/features.ts). */
 export function LeaderboardPanel({ communityId }: { communityId: string }) {
   const { token } = useAuth();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);

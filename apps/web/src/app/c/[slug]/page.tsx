@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
+import { FEATURES } from '@/lib/features';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChatPanel } from '@/components/chat-panel';
@@ -19,6 +20,19 @@ import { connectSocket } from '@/lib/socket';
 
 type Tab = 'play' | 'chat' | 'events' | 'polls' | 'leaderboard';
 
+/** Tabs shown in the sidebar — gated by FEATURES in lib/features.ts */
+const COMMUNITY_TABS: { id: Tab; label: string; feature?: keyof typeof FEATURES }[] = [
+  { id: 'play', label: '🎮 Play' },
+  { id: 'chat', label: 'Chat', feature: 'chat' },
+  { id: 'events', label: 'Events', feature: 'events' },
+  { id: 'polls', label: 'Polls', feature: 'polls' },
+  { id: 'leaderboard', label: 'Leaderboard', feature: 'communityLeaderboard' },
+];
+
+function visibleTabs() {
+  return COMMUNITY_TABS.filter((t) => !t.feature || FEATURES[t.feature]);
+}
+
 export default function CommunityPage() {
   const params = useParams();
   const slug = params.slug as string;
@@ -28,6 +42,7 @@ export default function CommunityPage() {
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
   const [tab, setTab] = useState<Tab>('play');
   const [inviteUrl, setInviteUrl] = useState('');
+  const tabs = visibleTabs();
 
   useEffect(() => {
     if (!loading && !user) router.push('/login');
@@ -64,7 +79,9 @@ export default function CommunityPage() {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  const voiceChannel = community.channels.find((c) => c.type === 'voice');
+  const voiceChannel = FEATURES.voiceRooms
+    ? community.channels.find((c) => c.type === 'voice')
+    : undefined;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -85,33 +102,39 @@ export default function CommunityPage() {
       </header>
 
       <div className="flex-1 container mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
-        <aside className="lg:w-48 shrink-0 space-y-1">
-          {(['play', 'events', 'chat', 'polls', 'leaderboard'] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm capitalize font-medium ${tab === t ? 'bg-primary/20 text-primary' : 'hover:bg-secondary'}`}
-            >
-              {t === 'play' ? '🎮 Play' : t}
-            </button>
-          ))}
-          <div className="pt-4 border-t border-border mt-4">
-            <p className="text-xs text-muted-foreground px-3 mb-2">Channels</p>
-            {community.channels.map((ch) => (
+        {tabs.length > 1 && (
+          <aside className="lg:w-48 shrink-0 space-y-1">
+            {tabs.map((t) => (
               <button
-                key={ch.id}
-                onClick={() => { setActiveChannel(ch); setTab('chat'); }}
-                className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-1 ${activeChannel?.id === ch.id && tab === 'chat' ? 'bg-secondary' : 'hover:bg-secondary/50'}`}
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm capitalize font-medium ${tab === t.id ? 'bg-primary/20 text-primary' : 'hover:bg-secondary'}`}
               >
-                {ch.type === 'voice' ? <Mic className="h-3 w-3" /> : ch.type === 'activity' ? <Gamepad2 className="h-3 w-3" /> : <Hash className="h-3 w-3" />}
-                {ch.name}
+                {t.label}
               </button>
             ))}
-          </div>
-        </aside>
+
+            {/* Phase 2 — channel list (chat + voice); see FEATURES.chat */}
+            {FEATURES.chat && (
+              <div className="pt-4 border-t border-border mt-4">
+                <p className="text-xs text-muted-foreground px-3 mb-2">Channels</p>
+                {community.channels.map((ch) => (
+                  <button
+                    key={ch.id}
+                    onClick={() => { setActiveChannel(ch); setTab('chat'); }}
+                    className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-1 ${activeChannel?.id === ch.id && tab === 'chat' ? 'bg-secondary' : 'hover:bg-secondary/50'}`}
+                  >
+                    {ch.type === 'voice' ? <Mic className="h-3 w-3" /> : ch.type === 'activity' ? <Gamepad2 className="h-3 w-3" /> : <Hash className="h-3 w-3" />}
+                    {ch.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </aside>
+        )}
 
         <main className="flex-1 min-w-0">
-          {tab === 'chat' && activeChannel && activeChannel.type === 'text' && (
+          {tab === 'chat' && FEATURES.chat && activeChannel && activeChannel.type === 'text' && (
             <Card className="h-full">
               <CardHeader className="py-3"><CardTitle className="text-base">#{activeChannel.name}</CardTitle></CardHeader>
               <CardContent className="p-0">
@@ -122,15 +145,19 @@ export default function CommunityPage() {
 
           {tab === 'play' && <PlayPanel communityId={community.id} slug={slug} />}
 
-          {tab === 'events' && (
+          {tab === 'events' && FEATURES.events && (
             <div className="space-y-4">
               <EventsPanel communityId={community.id} slug={slug} />
-              {voiceChannel && <VoiceRoom roomName={`${community.slug}-${voiceChannel.name}`} />}
+              {FEATURES.voiceRooms && voiceChannel && (
+                <VoiceRoom roomName={`${community.slug}-${voiceChannel.name}`} />
+              )}
             </div>
           )}
 
-          {tab === 'polls' && <PollsPanel communityId={community.id} />}
-          {tab === 'leaderboard' && <LeaderboardPanel communityId={community.id} />}
+          {tab === 'polls' && FEATURES.polls && <PollsPanel communityId={community.id} />}
+          {tab === 'leaderboard' && FEATURES.communityLeaderboard && (
+            <LeaderboardPanel communityId={community.id} />
+          )}
         </main>
       </div>
     </div>

@@ -1,5 +1,6 @@
 'use client';
 
+/** Phase 2 — real-time chat (enable FEATURES.chat in lib/features.ts). */
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { connectSocket, SOCKET_EVENTS } from '@/lib/socket';

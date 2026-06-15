@@ -1,5 +1,6 @@
 'use client';
 
+/** Phase 2 — community polls (enable FEATURES.polls in lib/features.ts). */
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
