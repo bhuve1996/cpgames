@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nest build",
-    "dev": "nest start --watch",
+    "dev": "nodemon --watch src --watch ../../packages/shared/dist --watch ../../packages/game-engine/dist --ext ts,js --delay 300ms --exec \"nest start\"",
     "start": "node dist/main",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -49,6 +49,7 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-jwt": "^4.0.1",
     "prisma": "^6.2.1",
+    "nodemon": "^3.1.9",
     "typescript": "^5.7.3"
   }
 }

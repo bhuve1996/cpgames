@@ -11,6 +11,20 @@ class PlayNowDto {
   packId?: string;
 }
 
+class GuestPlayDto {
+  @IsString()
+  displayName!: string;
+
+  @IsOptional()
+  @IsString()
+  packId?: string;
+}
+
+class GuestJoinDto {
+  @IsString()
+  displayName!: string;
+}
+
 class TriviaQuestionDto {
   @IsString()
   id!: string;
@@ -66,6 +80,26 @@ export class GamesController {
       emoji: p.emoji,
       questionCount: p.questions.length,
     }));
+  }
+
+  @Get('guest/enabled')
+  guestEnabled() {
+    return { enabled: this.games.isGuestPlayEnabled() };
+  }
+
+  @Post('guest/play')
+  guestPlay(@Body() body: GuestPlayDto) {
+    return this.games.createGuestSession(body.displayName, body.packId ?? 'general');
+  }
+
+  @Post('guest/sessions/:sessionId/join')
+  guestJoin(@Param('sessionId') sessionId: string, @Body() body: GuestJoinDto) {
+    return this.games.joinGuestSession(sessionId, body.displayName);
+  }
+
+  @Get('guest/sessions/:sessionId')
+  getGuestSession(@Param('sessionId') sessionId: string) {
+    return this.games.getGuestSession(sessionId);
   }
 
   @Post('communities/:communityId/sessions')

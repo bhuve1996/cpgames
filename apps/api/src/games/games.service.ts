@@ -1,20 +1,34 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.module';
 import { CommunitiesService } from '../communities/communities.service';
 import { LeaderboardService } from '../leaderboard/leaderboard.service';
 import { createTriviaEngine, TriviaEngine } from '@playground/game-engine';
 import type { TriviaQuestion } from '@playground/shared';
-import { getTriviaPack } from '@playground/shared';
+import { getTriviaPack, GUEST_PLAY_ENABLED } from '@playground/shared';
 
 @Injectable()
 export class GamesService {
   private engines = new Map<string, TriviaEngine>();
+  private guestEngines = new Map<string, TriviaEngine>();
 
   constructor(
     private prisma: PrismaService,
     private communities: CommunitiesService,
     private leaderboard: LeaderboardService,
+    private config: ConfigService,
   ) {}
+
+  isGuestPlayEnabled(): boolean {
+    const envFlag = this.config.get<string>('GUEST_PLAY_ENABLED');
+    if (envFlag === 'false') return false;
+    return GUEST_PLAY_ENABLED;
+  }
+
+  isGuestSession(sessionId: string): boolean {
+    return this.guestEngines.has(sessionId);
+  }
 
   async createSession(
     communityId: string,
@@ -47,12 +61,16 @@ export class GamesService {
   }
 
   getEngine(sessionId: string): TriviaEngine {
-    const engine = this.engines.get(sessionId);
+    const engine = this.guestEngines.get(sessionId) ?? this.engines.get(sessionId);
     if (!engine) throw new NotFoundException('Game session not found or expired');
     return engine;
   }
 
   async loadEngine(sessionId: string): Promise<TriviaEngine> {
+    if (this.guestEngines.has(sessionId)) {
+      return this.guestEngines.get(sessionId)!;
+    }
+
     if (this.engines.has(sessionId)) {
       return this.engines.get(sessionId)!;
     }
@@ -90,6 +108,15 @@ export class GamesService {
     sessionId: string,
     user: { id: string; displayName: string; avatarUrl?: string | null },
   ) {
+    if (this.isGuestSession(sessionId)) {
+      const engine = await this.loadEngine(sessionId);
+      return engine.addPlayer({
+        userId: user.id,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+      });
+    }
+
     const session = await this.prisma.gameSession.findUnique({ where: { id: sessionId } });
     if (!session) throw new NotFoundException('Game session not found');
     await this.communities.requireMember(session.communityId, user.id);
@@ -113,6 +140,10 @@ export class GamesService {
   async persistState(sessionId: string) {
     const engine = this.getEngine(sessionId);
     const state = engine.getState();
+
+    if (this.isGuestSession(sessionId)) {
+      return state;
+    }
 
     await this.prisma.gameSession.update({
       where: { id: sessionId },
@@ -167,6 +198,67 @@ export class GamesService {
     return this.createSession(communityId, hostId, {
       questions: pack.questions,
     });
+  }
+
+  createGuestSession(displayName: string, packId = 'general') {
+    if (!this.isGuestPlayEnabled()) {
+      throw new ForbiddenException('Guest play is disabled');
+    }
+
+    const trimmedName = displayName.trim();
+    if (trimmedName.length < 2) {
+      throw new ForbiddenException('Display name must be at least 2 characters');
+    }
+
+    const guestId = `guest-${randomUUID()}`;
+    const sessionId = randomUUID();
+    const pack = getTriviaPack(packId) ?? getTriviaPack('general')!;
+    const engine = createTriviaEngine({
+      sessionId,
+      communityId: 'guest',
+      hostId: guestId,
+      questions: pack.questions,
+    });
+    engine.addPlayer({
+      userId: guestId,
+      displayName: trimmedName,
+      avatarUrl: null,
+    });
+    this.guestEngines.set(sessionId, engine);
+
+    return { sessionId, guestId, state: engine.getState() };
+  }
+
+  joinGuestSession(sessionId: string, displayName: string) {
+    if (!this.isGuestPlayEnabled()) {
+      throw new ForbiddenException('Guest play is disabled');
+    }
+    if (!this.isGuestSession(sessionId)) {
+      throw new NotFoundException('Guest game session not found');
+    }
+
+    const trimmedName = displayName.trim();
+    if (trimmedName.length < 2) {
+      throw new ForbiddenException('Display name must be at least 2 characters');
+    }
+
+    const guestId = `guest-${randomUUID()}`;
+    const engine = this.guestEngines.get(sessionId)!;
+    const state = engine.addPlayer({
+      userId: guestId,
+      displayName: trimmedName,
+      avatarUrl: null,
+    });
+
+    return { guestId, state };
+  }
+
+  getGuestSession(sessionId: string, playerId?: string) {
+    if (!this.isGuestSession(sessionId)) {
+      throw new NotFoundException('Guest game session not found');
+    }
+    const engine = this.guestEngines.get(sessionId)!;
+    return engine.getPublicState(playerId);
   }
 
   async createFromEvent(eventId: string, hostId: string) {

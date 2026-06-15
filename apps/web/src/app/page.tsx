@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Gamepad2, Users, Sparkles, Trophy, Mic, Calendar } from 'lucide-react';
+import { guestPlayEnabled } from '@/lib/config';
 
 export default function HomePage() {
   return (
@@ -34,8 +35,13 @@ export default function HomePage() {
               friend groups, clubs, and teams engaged — all in one place.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+              {guestPlayEnabled && (
+                <Link href="/game">
+                  <Button size="lg" className="w-full sm:w-auto gap-2">🎮 Play Trivia Now</Button>
+                </Link>
+              )}
               <Link href="/register">
-                <Button size="lg" className="w-full sm:w-auto">Create your community</Button>
+                <Button size="lg" variant={guestPlayEnabled ? 'outline' : 'default'} className="w-full sm:w-auto">Create your community</Button>
               </Link>
               <Link href="/login">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto">Sign in</Button>

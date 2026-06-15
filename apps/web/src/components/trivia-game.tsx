@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
-import { connectSocket, SOCKET_EVENTS } from '@/lib/socket';
+import { connectSocket, resetSocket, SOCKET_EVENTS } from '@/lib/socket';
 import { Button } from '@/components/ui/button';
 import type { GameSession } from '@playground/shared';
 import { ArrowLeft, Trophy, Users, Clock, Zap, Copy, Check } from 'lucide-react';
@@ -21,8 +21,21 @@ const ANSWER_COLORS = [
 
 const ANSWER_SHAPES = ['▲', '◆', '●', '■'];
 
-export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: string }) {
+export function TriviaGame({
+  sessionId,
+  slug,
+  guest,
+}: {
+  sessionId: string;
+  slug?: string;
+  guest?: { guestId: string; displayName: string };
+}) {
   const { user, token } = useAuth();
+  const playerId = guest?.guestId ?? user?.id ?? null;
+  const isGuest = !!guest;
+  const backHref = isGuest ? '/game' : `/c/${slug}`;
+  const playAgainHref = isGuest ? '/game' : `/c/${slug}/play`;
+  const communityHref = isGuest ? '/' : `/c/${slug}`;
   const [gameState, setGameState] = useState<GameSession | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -30,18 +43,27 @@ export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: strin
   const [error, setError] = useState<string | null>(null);
 
   const loadSession = useCallback(() => {
+    if (isGuest) {
+      api<GameSession>(`/games/guest/sessions/${sessionId}`)
+        .then(setGameState)
+        .catch((err) => setError(getErrorMessage(err, 'Failed to load game')));
+      return;
+    }
     if (!token) return;
     api<GameSession>(`/games/sessions/${sessionId}`, { token })
       .then(setGameState)
       .catch((err) => setError(getErrorMessage(err, 'Failed to load game')));
-  }, [token, sessionId]);
+  }, [token, sessionId, isGuest]);
 
   useEffect(() => {
     loadSession();
   }, [loadSession]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!isGuest && !token) return;
+    if (isGuest && !guest?.guestId) return;
+
+    resetSocket();
     const socket = connectSocket();
 
     const onConnect = () => {
@@ -52,7 +74,7 @@ export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: strin
       setError(null);
       setGameState(state);
       if (state.state === 'question') {
-        const me = state.players.find((p) => p.userId === user?.id);
+        const me = state.players.find((p) => p.userId === playerId);
         setAnswered(me?.currentAnswer != null);
       }
       if (state.state === 'reveal' || state.state === 'question') {
@@ -85,7 +107,7 @@ export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: strin
       socket.off(SOCKET_EVENTS.GAME_ERROR, onGameError);
       socket.off('connect_error', onConnectError);
     };
-  }, [sessionId, token, user?.id]);
+  }, [sessionId, token, playerId, isGuest, guest?.guestId]);
 
   // Countdown timer
   useEffect(() => {
@@ -96,7 +118,7 @@ export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: strin
     return () => clearInterval(interval);
   }, [gameState?.state, gameState?.currentQuestionIndex]);
 
-  const isHost = user?.id === gameState?.hostId;
+  const isHost = playerId === gameState?.hostId;
   const currentQuestion = gameState?.questions[gameState.currentQuestionIndex];
   const progress = gameState
     ? ((gameState.currentQuestionIndex + (gameState.state === 'finished' ? 1 : 0)) / gameState.questions.length) * 100
@@ -125,8 +147,8 @@ export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: strin
         {error ? (
           <>
             <p className="text-destructive text-center">{error}</p>
-            <Link href={`/c/${slug}/play`}>
-              <Button variant="outline">Back to Play</Button>
+            <Link href={backHref}>
+              <Button variant="outline">Back</Button>
             </Link>
           </>
         ) : (
@@ -147,7 +169,7 @@ export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: strin
       </div>
 
       <header className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-        <Link href={`/c/${slug}`}>
+        <Link href={backHref}>
           <Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button>
         </Link>
         <div className="text-center">
@@ -315,11 +337,11 @@ export function TriviaGame({ sessionId, slug }: { sessionId: string; slug: strin
             </div>
 
             <div className="flex gap-3 w-full max-w-sm">
-              <Link href={`/c/${slug}/play`} className="flex-1">
+              <Link href={playAgainHref} className="flex-1">
                 <Button variant="outline" className="w-full">Play Again</Button>
               </Link>
-              <Link href={`/c/${slug}`} className="flex-1">
-                <Button className="w-full">Back to Community</Button>
+              <Link href={communityHref} className="flex-1">
+                <Button className="w-full">{isGuest ? 'Home' : 'Back to Community'}</Button>
               </Link>
             </div>
           </div>
