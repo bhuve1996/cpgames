@@ -23,9 +23,16 @@ export default function TriviaSessionPage() {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
+  const [guestOk, setGuestOk] = useState(guestPlayEnabled);
 
   useEffect(() => {
-    if (!guestPlayEnabled) {
+    api<{ enabled: boolean }>('/games/guest/enabled')
+      .then((r) => setGuestOk(r.enabled))
+      .catch(() => setGuestOk(guestPlayEnabled));
+  }, []);
+
+  useEffect(() => {
+    if (!guestOk) {
       setChecking(false);
       return;
     }
@@ -41,7 +48,7 @@ export default function TriviaSessionPage() {
       })
       .catch((err) => setError(getErrorMessage(err, 'Game not found')))
       .finally(() => setChecking(false));
-  }, [sessionId]);
+  }, [sessionId, guestOk]);
 
   const joinGame = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,7 +76,7 @@ export default function TriviaSessionPage() {
     }
   };
 
-  if (!guestPlayEnabled) {
+  if (!guestOk) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-muted-foreground">Guest play is currently disabled.</p>

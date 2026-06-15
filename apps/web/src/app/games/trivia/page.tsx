@@ -30,6 +30,13 @@ export default function TriviaPlayPage() {
   const [displayName, setDisplayName] = useState('');
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [guestOk, setGuestOk] = useState(guestPlayEnabled);
+
+  useEffect(() => {
+    api<{ enabled: boolean }>('/games/guest/enabled')
+      .then((r) => setGuestOk(r.enabled))
+      .catch(() => setGuestOk(guestPlayEnabled));
+  }, []);
 
   useEffect(() => {
     const existing = getGuestIdentity();
@@ -61,7 +68,7 @@ export default function TriviaPlayPage() {
     }
   };
 
-  if (!guestPlayEnabled) {
+  if (!guestOk) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-muted-foreground">Guest play is currently disabled.</p>

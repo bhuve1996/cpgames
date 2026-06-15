@@ -10,7 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { SOCKET_EVENTS, GUEST_PLAY_ENABLED } from '@playground/shared';
+import { SOCKET_EVENTS } from '@playground/shared';
 import { ChannelsService } from '../channels/channels.service';
 import { GamesService } from '../games/games.service';
 import { CommunitiesService } from '../communities/communities.service';
@@ -51,7 +51,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         const guestId = client.handshake.auth?.guestId as string | undefined;
         const displayName = client.handshake.auth?.displayName as string | undefined;
         const guestAllowed =
-          GUEST_PLAY_ENABLED && this.config.get<string>('GUEST_PLAY_ENABLED') !== 'false';
+          this.config.get<string>('GUEST_PLAY_ENABLED') !== 'false';
 
         if (guestAllowed && guestId?.startsWith('guest-') && displayName?.trim()) {
           client.user = {

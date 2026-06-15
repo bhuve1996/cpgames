@@ -78,6 +78,8 @@ async function main() {
     CORS_ORIGIN: webUrl,
     NEXT_PUBLIC_API_URL: apiUrl,
     NEXT_PUBLIC_WS_URL: apiUrl,
+    GUEST_PLAY_ENABLED: 'true',
+    NEXT_PUBLIC_GUEST_PLAY_ENABLED: 'true',
   };
 
   // One-time compile so packages exist before watchers + servers start.

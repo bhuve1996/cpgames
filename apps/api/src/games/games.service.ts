@@ -6,7 +6,7 @@ import { CommunitiesService } from '../communities/communities.service';
 import { LeaderboardService } from '../leaderboard/leaderboard.service';
 import { createTriviaEngine, TriviaEngine } from '@playground/game-engine';
 import type { TriviaQuestion } from '@playground/shared';
-import { getTriviaPack, GUEST_PLAY_ENABLED } from '@playground/shared';
+import { getTriviaPack } from '@playground/shared';
 
 @Injectable()
 export class GamesService {
@@ -23,7 +23,7 @@ export class GamesService {
   isGuestPlayEnabled(): boolean {
     const envFlag = this.config.get<string>('GUEST_PLAY_ENABLED');
     if (envFlag === 'false') return false;
-    return GUEST_PLAY_ENABLED;
+    return true;
   }
 
   isGuestSession(sessionId: string): boolean {
