@@ -3,78 +3,107 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AnimatedBackground } from '@/components/animated-background';
 import { FloatingEmojis } from '@/components/floating-emojis';
-import { HeroIllustration } from '@/components/hero-illustration';
-import { Gamepad2, Users, ArrowRight } from 'lucide-react';
+import { SiteHeader } from '@/components/site-header';
+import { PromoStrip } from '@/components/promo-strip';
+import { PageBanner, MiniBanner } from '@/components/page-banner';
+import { gamesByMode } from '@/lib/games-catalog';
+import { Gamepad2, Users, User, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FEATURES_LIST = [
-  { icon: Gamepad2, title: 'Live Trivia', desc: 'Real-time multiplayer quizzes for any group size.' },
-  { icon: Users, title: 'Communities', desc: 'Create a home for your team, club, or friend group.' },
+  { icon: Users, title: 'Multiplayer', desc: 'Real-time trivia and party games with your whole group.' },
+  { icon: User, title: 'Single player', desc: 'Quick solo challenges — play anytime, beat your high score.' },
+  { icon: Gamepad2, title: 'Communities', desc: 'Create a home for your team, club, or friend group.' },
 ] as const;
 
 export default function HomePage() {
+  const multiplayer = gamesByMode('multiplayer').filter((g) => g.available);
+  const single = gamesByMode('single').filter((g) => g.available);
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       <AnimatedBackground />
-      <FloatingEmojis />
+      <FloatingEmojis preset="home" />
+      <PromoStrip />
+      <SiteHeader />
 
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80 animate-fade-in-up">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Gamepad2 className="h-6 w-6 text-primary animate-pulse-soft" />
-            Playground
-          </div>
-          <nav className="flex items-center gap-3">
-            <Link href="/games">
-              <Button variant="ghost">Games</Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="ghost">Log in</Button>
-            </Link>
-            <Link href="/register">
-              <Button>Get Started</Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <main className="container mx-auto px-4 py-8 md:py-12 space-y-12 max-w-5xl">
+        <PageBanner
+          variant="home"
+          eyebrow="Social gaming platform"
+          title={
+            <>
+              Where groups <span className="text-gradient">play together</span>
+            </>
+          }
+          description="Multiplayer game nights with friends, or solo challenges when you're on your own — no sign-up needed."
+          cta={{ href: '/games', label: 'Browse all games' }}
+          className="animate-fade-in-up"
+        />
 
-      <main>
-        <section className="container mx-auto px-4 py-12 md:py-20">
-          <div className="grid lg:grid-cols-2 gap-10 items-center max-w-5xl mx-auto">
-            <div className="text-center lg:text-left space-y-6 animate-fade-in-up">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-                Where groups{' '}
-                <span className="text-gradient">play together</span>
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
-                Jump into live trivia with friends — no sign-up needed. Create a community when you&apos;re ready for more.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start pt-2">
-                <Link href="/games">
-                  <Button size="lg" className="w-full sm:w-auto gap-2 shadow-lg shadow-primary/25 hover:scale-[1.02] transition-transform">
-                    Explore games <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto hover:scale-[1.02] transition-transform">
-                    Create your community
-                  </Button>
-                </Link>
+        {/* Multiplayer */}
+        <section className="space-y-4 animate-fade-in-up-delay-1">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">👥</span>
+              <div>
+                <h2 className="text-lg font-bold">Multiplayer</h2>
+                <p className="text-sm text-muted-foreground">Play with friends</p>
               </div>
             </div>
-            <div className="animate-fade-in-up-delay-2">
-              <HeroIllustration />
-            </div>
+            <Link href="/games" className="text-sm text-primary hover:underline shrink-0">
+              See all →
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {multiplayer.map((game) => (
+              <MiniBanner
+                key={game.id}
+                emoji={game.emoji}
+                title={game.title}
+                description={`${game.players} · ${game.duration}`}
+                href={game.href}
+              />
+            ))}
           </div>
         </section>
 
-        <section className="container mx-auto px-4 pb-16 grid gap-6 md:grid-cols-2 max-w-4xl">
+        {/* Single player */}
+        <section className="space-y-4 animate-fade-in-up-delay-2">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🎯</span>
+              <div>
+                <h2 className="text-lg font-bold">Single player</h2>
+                <p className="text-sm text-muted-foreground">Solo challenges</p>
+              </div>
+            </div>
+            <Link href="/games" className="text-sm text-primary hover:underline shrink-0">
+              See all →
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {single.map((game) => (
+              <MiniBanner
+                key={game.id}
+                emoji={game.emoji}
+                title={game.title}
+                description={game.duration ?? 'Quick round'}
+                href={game.href}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-3">
           {FEATURES_LIST.map(({ icon: Icon, title, desc }, i) => (
             <Card
               key={title}
               className={cn(
                 'bg-card/60 backdrop-blur-sm border-border/60 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 hover:-translate-y-1',
-                i === 0 ? 'animate-fade-in-up-delay-1' : 'animate-fade-in-up-delay-2',
+                i === 0 && 'animate-fade-in-up-delay-1',
+                i === 1 && 'animate-fade-in-up-delay-2',
+                i === 2 && 'animate-fade-in-up-delay-3',
               )}
             >
               <CardHeader>
@@ -86,6 +115,14 @@ export default function HomePage() {
               </CardHeader>
             </Card>
           ))}
+        </section>
+
+        <section className="text-center pb-8 animate-fade-in-up-delay-3">
+          <Link href="/games">
+            <Button size="lg" className="gap-2 shadow-lg shadow-primary/25">
+              Explore game library <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </section>
       </main>
 

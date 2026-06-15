@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/components/auth-provider';
 import { ThemeProvider } from '@/components/theme-provider';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { Toaster } from '@/components/toaster';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -33,10 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-          <div className="fixed bottom-4 right-4 z-50">
-            <ThemeToggle className="shadow-md bg-background/80 backdrop-blur-sm" />
-          </div>
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

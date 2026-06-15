@@ -9,8 +9,13 @@ import { getErrorMessage } from '@/lib/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SiteHeader } from '@/components/site-header';
+import { PromoStrip } from '@/components/promo-strip';
+import { PageBanner } from '@/components/page-banner';
+import { AnimatedBackground } from '@/components/animated-background';
+import { FloatingEmojis } from '@/components/floating-emojis';
 import type { Community } from '@playground/shared';
-import { Gamepad2, Plus, Users } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, token, loading, logout } = useAuth();
@@ -54,22 +59,22 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-border/50">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2 font-bold">
-            <Gamepad2 className="h-5 w-5 text-primary" />
-            Playground
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">{user.displayName}</span>
-            <Button variant="ghost" size="sm" onClick={logout}>Logout</Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen relative overflow-hidden">
+      <AnimatedBackground />
+      <FloatingEmojis preset="dashboard" density="light" />
+      <PromoStrip />
+      <SiteHeader user={{ displayName: user.displayName }} onLogout={logout} />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
+      <main className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
+        <PageBanner
+          variant="dashboard"
+          eyebrow="Your hub"
+          title={`Hey, ${user.displayName.split(' ')[0]}!`}
+          description="Manage communities and jump back into a game anytime."
+          cta={{ href: '/games', label: 'Play a game' }}
+        />
+
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Your Communities</h1>
             <p className="text-muted-foreground">Manage groups and host game nights</p>

@@ -15,8 +15,10 @@ import { PlayPanel } from '@/components/play-panel';
 import { LeaderboardPanel } from '@/components/quiz-leaderboard';
 import { VoiceRoom } from '@/components/voice-room';
 import type { Channel, Community } from '@playground/shared';
-import { ArrowLeft, Hash, Mic, Gamepad2, Copy } from 'lucide-react';
+import { AppHeader } from '@/components/site-header';
+import { MiniBanner } from '@/components/page-banner';
 import { connectSocket } from '@/lib/socket';
+import { Hash, Mic, Gamepad2, Copy } from 'lucide-react';
 
 type Tab = 'play' | 'chat' | 'events' | 'polls' | 'leaderboard';
 
@@ -85,21 +87,20 @@ export default function CommunityPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-border/50 shrink-0">
-        <div className="container mx-auto flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
-            <div>
-              <h1 className="font-bold">{community.name}</h1>
-              <p className="text-xs text-muted-foreground">{community.memberCount} members</p>
-            </div>
-          </div>
+      <AppHeader
+        title={community.name}
+        subtitle={`${community.memberCount} members`}
+        actions={
           <Button size="sm" variant="outline" onClick={createInvite}>
             <Copy className="h-4 w-4 mr-1" /> Invite
           </Button>
-        </div>
-        {inviteUrl && <p className="text-xs text-center text-primary pb-2">Invite link copied!</p>}
-      </header>
+        }
+      />
+      {inviteUrl && (
+        <p className="text-xs text-center text-primary py-2 bg-primary/5 border-b border-primary/10">
+          Invite link copied!
+        </p>
+      )}
 
       <div className="flex-1 container mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
         {tabs.length > 1 && (
@@ -133,7 +134,14 @@ export default function CommunityPage() {
           </aside>
         )}
 
-        <main className="flex-1 min-w-0">
+        <main className="flex-1 min-w-0 space-y-4">
+          <MiniBanner
+            emoji="🎮"
+            title="Quick play"
+            description="Start a trivia session for this community"
+            href={`/c/${slug}/play`}
+          />
+
           {tab === 'chat' && FEATURES.chat && activeChannel && activeChannel.type === 'text' && (
             <Card className="h-full">
               <CardHeader className="py-3"><CardTitle className="text-base">#{activeChannel.name}</CardTitle></CardHeader>

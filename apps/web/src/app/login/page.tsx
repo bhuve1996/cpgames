@@ -10,6 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getApiUrl } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
 import { AnimatedBackground } from '@/components/animated-background';
+import { FloatingEmojis } from '@/components/floating-emojis';
+import { SiteHeader } from '@/components/site-header';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -34,8 +36,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
       <AnimatedBackground />
+      <FloatingEmojis preset="home" density="light" />
+      <SiteHeader variant="minimal" />
+      <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md relative z-10 animate-fade-in-up shadow-xl bg-card/90 backdrop-blur-sm">
         <CardHeader>
           <CardTitle>Welcome back</CardTitle>
@@ -60,6 +65,7 @@ export default function LoginPage() {
           </p>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

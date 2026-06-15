@@ -9,12 +9,14 @@ import { guestPlayEnabled } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GamesHeader } from '@/components/games-header';
+import { SiteHeader } from '@/components/site-header';
+import { PageBanner } from '@/components/page-banner';
 import { AnimatedBackground } from '@/components/animated-background';
-import { GameArt } from '@/components/game-art';
+import { FloatingEmojis } from '@/components/floating-emojis';
 import { Zap } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { toast } from '@/lib/toast';
 
 interface TriviaPackInfo {
   id: string;
@@ -50,6 +52,7 @@ export default function TriviaPlayPage() {
     const name = displayName.trim();
     if (name.length < 2) {
       setError('Enter your name (at least 2 characters)');
+      toast.warning('Name required', 'Enter at least 2 characters to play');
       return;
     }
 
@@ -61,9 +64,12 @@ export default function TriviaPlayPage() {
         body: JSON.stringify({ displayName: name, packId }),
       });
       setGuestIdentity(res.guestId, name);
+      toast.success('Lobby created!', 'Share the link to invite friends');
       router.push(`/games/trivia/${res.sessionId}`);
     } catch (err) {
-      setError(getErrorMessage(err, 'Failed to start game'));
+      const message = getErrorMessage(err, 'Failed to start game');
+      setError(message);
+      toast.error('Could not start game', message);
       setStarting(null);
     }
   };
@@ -80,17 +86,17 @@ export default function TriviaPlayPage() {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
       <AnimatedBackground />
-      <GamesHeader backHref="/games" backLabel="All games" title="Live Trivia" />
+      <FloatingEmojis preset="trivia" density="normal" />
+      <SiteHeader variant="subpage" backHref="/games" backLabel="All games" title="Live Trivia" />
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-lg space-y-6">
-        <div className="text-center space-y-3 animate-fade-in-up">
-          <GameArt
-            src="/illustrations/trivia-play.svg"
-            alt="Animated trivia game"
-            className="w-full max-w-xs"
-          />
-          <p className="text-muted-foreground">Choose a quiz pack and start the lobby</p>
-        </div>
+        <PageBanner
+          variant="trivia"
+          eyebrow="No login required"
+          title="Live Trivia"
+          description="Choose a quiz pack, enter your name, and start the lobby."
+          className="animate-fade-in-up !p-5 md:!p-6"
+        />
 
         <Card className="animate-fade-in-up-delay-1 bg-card/80 backdrop-blur-sm">
           <CardHeader className="pb-2">

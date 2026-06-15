@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import type { GameSession } from '@playground/shared';
 import { ArrowLeft, Trophy, Users, Clock, Zap, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/lib/toast';
+import { GameStartCountdown } from '@/components/game-start-countdown';
 
 const ANSWER_COLORS = [
   'bg-red-500 hover:bg-red-600 border-red-600',
@@ -41,17 +43,32 @@ export function TriviaGame({
   const [copied, setCopied] = useState(false);
   const [answered, setAnswered] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hostStartCountdown, setHostStartCountdown] = useState(false);
+  const [entryCountdown, setEntryCountdown] = useState(false);
+  const [questionVisible, setQuestionVisible] = useState(false);
+  const prevPlayerCount = useRef(0);
+  const prevGameState = useRef<string | null>(null);
+  const hostStartedLocally = useRef(false);
 
   const loadSession = useCallback(() => {
+    const applyState = (state: GameSession) => {
+      setGameState(state);
+      prevPlayerCount.current = state.players.length;
+      if (state.state === 'question') {
+        setQuestionVisible(true);
+      }
+      prevGameState.current = state.state;
+    };
+
     if (isGuest) {
       api<GameSession>(`/games/guest/sessions/${sessionId}`)
-        .then(setGameState)
+        .then(applyState)
         .catch((err) => setError(getErrorMessage(err, 'Failed to load game')));
       return;
     }
     if (!token) return;
     api<GameSession>(`/games/sessions/${sessionId}`, { token })
-      .then(setGameState)
+      .then(applyState)
       .catch((err) => setError(getErrorMessage(err, 'Failed to load game')));
   }, [token, sessionId, isGuest]);
 
@@ -73,6 +90,32 @@ export function TriviaGame({
     const onState = (state: GameSession) => {
       setError(null);
       setGameState(state);
+
+      if (state.players.length > prevPlayerCount.current && prevPlayerCount.current > 0) {
+        const newest = state.players[state.players.length - 1];
+        if (newest && newest.userId !== playerId) {
+          toast.info(`${newest.displayName} joined`, 'Waiting in the lobby');
+        }
+      }
+      prevPlayerCount.current = state.players.length;
+
+      const enteringQuestion =
+        prevGameState.current !== 'question' && state.state === 'question';
+
+      if (enteringQuestion) {
+        setAnswered(false);
+        if (hostStartedLocally.current) {
+          hostStartedLocally.current = false;
+          setQuestionVisible(true);
+          toast.success('Game started!', 'First question is live');
+        } else if (!isHost) {
+          setQuestionVisible(false);
+          setEntryCountdown(true);
+        } else {
+          setQuestionVisible(true);
+        }
+      }
+
       if (state.state === 'question') {
         const me = state.players.find((p) => p.userId === playerId);
         setAnswered(me?.currentAnswer != null);
@@ -85,10 +128,22 @@ export function TriviaGame({
           setTimeLeft(Math.max(0, Math.ceil((limit - elapsed) / 1000)));
         }
       }
+
+      if (state.state === 'finished' && prevGameState.current !== 'finished') {
+        const winner = [...state.players].sort((a, b) => b.score - a.score)[0];
+        toast.info(
+          'Game over!',
+          winner ? `${winner.displayName} wins with ${winner.score.toLocaleString()} pts` : undefined,
+        );
+      }
+
+      prevGameState.current = state.state;
     };
 
     const onGameError = (payload: { message?: string }) => {
-      setError(payload?.message ?? 'Game action failed');
+      const message = payload?.message ?? 'Game action failed';
+      setError(message);
+      toast.error('Game error', message);
     };
 
     const onConnectError = () => {
@@ -118,6 +173,12 @@ export function TriviaGame({
     return () => clearInterval(interval);
   }, [gameState?.state, gameState?.currentQuestionIndex]);
 
+  useEffect(() => {
+    if (gameState?.state === 'question' && questionVisible && timeLeft === 5) {
+      toast.warning('5 seconds left!', 'Lock in your answer');
+    }
+  }, [timeLeft, gameState?.state, questionVisible]);
+
   const isHost = playerId === gameState?.hostId;
   const currentQuestion = gameState?.questions[gameState.currentQuestionIndex];
   const progress = gameState
@@ -126,11 +187,28 @@ export function TriviaGame({
 
   const emit = (event: string, data: object) => connectSocket().emit(event, data);
 
-  const startGame = () => emit(SOCKET_EVENTS.GAME_START, { sessionId });
+  const startGame = () => {
+    hostStartedLocally.current = true;
+    setHostStartCountdown(true);
+  };
+
+  const confirmStartGame = useCallback(() => {
+    setHostStartCountdown(false);
+    emit(SOCKET_EVENTS.GAME_START, { sessionId });
+    toast.info('Starting game…', 'Get ready for the first question');
+  }, [sessionId]);
+
+  const completeEntryCountdown = useCallback(() => {
+    setEntryCountdown(false);
+    setQuestionVisible(true);
+    toast.success('Go!', 'Answer before time runs out');
+  }, []);
+
   const submitAnswer = (index: number) => {
     if (answered) return;
     setAnswered(true);
     emit(SOCKET_EVENTS.GAME_ANSWER, { sessionId, answerIndex: index });
+    toast.success('Answer locked in!', 'Waiting for other players');
   };
   const reveal = () => emit(SOCKET_EVENTS.GAME_NEXT, { sessionId, action: 'reveal' });
   const nextQuestion = () => emit(SOCKET_EVENTS.GAME_NEXT, { sessionId, action: 'next' });
@@ -138,6 +216,7 @@ export function TriviaGame({
   const copyInvite = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
+    toast.success('Invite link copied!', 'Share it with friends to join');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -163,6 +242,20 @@ export function TriviaGame({
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-primary/5">
+      {hostStartCountdown && (
+        <GameStartCountdown
+          label="Starting game"
+          sublabel={`${gameState.players.length} player${gameState.players.length !== 1 ? 's' : ''} ready`}
+          onComplete={confirmStartGame}
+        />
+      )}
+      {entryCountdown && (
+        <GameStartCountdown
+          label="Game starting"
+          sublabel="Host started the round"
+          onComplete={completeEntryCountdown}
+        />
+      )}
       {/* Progress bar */}
       <div className="h-1.5 bg-secondary w-full">
         <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
@@ -228,7 +321,14 @@ export function TriviaGame({
         )}
 
         {/* QUESTION */}
-        {gameState.state === 'question' && currentQuestion && (
+        {gameState.state === 'question' && currentQuestion && !questionVisible && !entryCountdown && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center">
+            <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+            <p className="text-muted-foreground animate-pulse">Get ready…</p>
+          </div>
+        )}
+
+        {gameState.state === 'question' && currentQuestion && questionVisible && (
           <div className="flex-1 flex flex-col gap-6">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">

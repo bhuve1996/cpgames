@@ -9,7 +9,7 @@ import { getGuestIdentity, setGuestIdentity } from '@/lib/guest';
 import { guestPlayEnabled } from '@/lib/config';
 import { resetSocket } from '@/lib/socket';
 import { TriviaGame } from '@/components/trivia-game';
-import { GamesHeader } from '@/components/games-header';
+import { SiteHeader } from '@/components/site-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,7 +99,7 @@ export default function TriviaSessionPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <GamesHeader backHref="/games/trivia" backLabel="Live Trivia" title="Join game" />
+      <SiteHeader variant="subpage" backHref="/games/trivia" backLabel="Live Trivia" title="Join game" />
 
       <main className="flex-1 container mx-auto px-4 py-12 max-w-md">
         <Card>
