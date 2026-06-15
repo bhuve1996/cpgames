@@ -7,7 +7,8 @@ import { PageBanner } from '@/components/page-banner';
 import { AnimatedBackground } from '@/components/animated-background';
 import { FloatingEmojis } from '@/components/floating-emojis';
 import { GamesCategorySection } from '@/components/games-category-section';
-import { gamesByMode, countByMode, type GameMode } from '@/lib/games-catalog';
+import { GamesTierSection } from '@/components/games-tier-section';
+import { gamesByMode, gamesByModeAndTier, countByMode, type GameMode } from '@/lib/games-catalog';
 import { cn } from '@/lib/utils';
 import { Users, User, LayoutGrid } from 'lucide-react';
 
@@ -51,7 +52,7 @@ export default function GamesPage() {
             <div>
               <p className="font-semibold">Multiplayer</p>
               <p className="text-sm text-muted-foreground">
-                {mp.live} live · {mp.total} games — trivia, party games &amp; more
+                {mp.live} live · Sketch Off, Trivia &amp; party games
               </p>
             </div>
           </div>
@@ -87,11 +88,10 @@ export default function GamesPage() {
         </div>
 
         {(filter === 'all' || filter === 'multiplayer') && (
-          <GamesCategorySection
-            mode="multiplayer"
-            games={gamesByMode('multiplayer')}
-            animationDelay="animate-fade-in-up-delay-2"
-          />
+          <section className="space-y-8 animate-fade-in-up-delay-2">
+            <GamesTierSection tier="live" games={gamesByModeAndTier('multiplayer', 'live')} />
+            <GamesTierSection tier="party" games={gamesByModeAndTier('multiplayer', 'party')} />
+          </section>
         )}
 
         {(filter === 'all' || filter === 'single') && (

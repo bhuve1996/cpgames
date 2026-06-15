@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { SOCKET_EVENTS } from '@playground/shared';
 import { ChannelsService } from '../channels/channels.service';
 import { GamesService } from '../games/games.service';
+import { DrawGuessService } from '../games/draw-guess.service';
 import { CommunitiesService } from '../communities/communities.service';
 import { PrismaService } from '../prisma/prisma.module';
 
@@ -37,6 +38,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     private config: ConfigService,
     private channels: ChannelsService,
     private games: GamesService,
+    private drawGuess: DrawGuessService,
     private communities: CommunitiesService,
     private prisma: PrismaService,
   ) {}
@@ -204,6 +206,114 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       return await action();
     } catch (err) {
       this.emitGameError(client, sessionId, err);
+    }
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.DRAW_JOIN)
+  joinDrawGame(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { sessionId: string },
+  ) {
+    return this.runDrawAction(client, data.sessionId, () => {
+      if (!this.drawGuess.isGuestSession(data.sessionId)) {
+        throw new Error('Draw session not found');
+      }
+      const room = `draw:${data.sessionId}`;
+      client.join(room);
+      const state = this.drawGuess.getGuestSession(data.sessionId, client.user!.id);
+      this.server.to(room).emit(SOCKET_EVENTS.DRAW_STATE, state);
+      return state;
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.DRAW_START)
+  startDrawGame(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { sessionId: string },
+  ) {
+    return this.runDrawAction(client, data.sessionId, () => {
+      const engine = this.drawGuess.getEngine(data.sessionId);
+      const state = engine.start(client.user!.id);
+      this.broadcastDrawState(data.sessionId, state);
+      return state;
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.DRAW_STROKE)
+  drawStroke(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { sessionId: string; stroke: { id: string; points: { x: number; y: number }[]; color: string; width: number } },
+  ) {
+    return this.runDrawAction(client, data.sessionId, () => {
+      const engine = this.drawGuess.getEngine(data.sessionId);
+      const state = engine.addStroke(client.user!.id, data.stroke);
+      this.broadcastDrawState(data.sessionId, state);
+      return state;
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.DRAW_CLEAR)
+  clearDrawCanvas(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { sessionId: string },
+  ) {
+    return this.runDrawAction(client, data.sessionId, () => {
+      const engine = this.drawGuess.getEngine(data.sessionId);
+      const state = engine.clearCanvas(client.user!.id);
+      this.broadcastDrawState(data.sessionId, state);
+      return state;
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.DRAW_GUESS)
+  submitDrawGuess(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { sessionId: string; guess: string },
+  ) {
+    return this.runDrawAction(client, data.sessionId, () => {
+      const engine = this.drawGuess.getEngine(data.sessionId);
+      const state = engine.submitGuess(
+        client.user!.id,
+        client.user!.displayName,
+        data.guess,
+      );
+      this.broadcastDrawState(data.sessionId, state);
+      return state;
+    });
+  }
+
+  @SubscribeMessage(SOCKET_EVENTS.DRAW_NEXT)
+  nextDrawRound(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { sessionId: string },
+  ) {
+    return this.runDrawAction(client, data.sessionId, () => {
+      const engine = this.drawGuess.getEngine(data.sessionId);
+      const state = engine.nextRound(client.user!.id);
+      this.broadcastDrawState(data.sessionId, state);
+      return state;
+    });
+  }
+
+  private broadcastDrawState(sessionId: string, state: object) {
+    this.server.to(`draw:${sessionId}`).emit(SOCKET_EVENTS.DRAW_STATE, state);
+  }
+
+  private emitDrawError(client: AuthenticatedSocket, sessionId: string, err: unknown) {
+    const message = err instanceof Error ? err.message : 'Draw action failed';
+    client.emit(SOCKET_EVENTS.DRAW_ERROR, { sessionId, message });
+  }
+
+  private runDrawAction(
+    client: AuthenticatedSocket,
+    sessionId: string,
+    action: () => object,
+  ) {
+    if (!client.user) return;
+    try {
+      return action();
+    } catch (err) {
+      this.emitDrawError(client, sessionId, err);
     }
   }
 

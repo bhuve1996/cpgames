@@ -17,7 +17,8 @@ const FEATURES_LIST = [
 ] as const;
 
 export default function HomePage() {
-  const multiplayer = gamesByMode('multiplayer').filter((g) => g.available);
+  const multiplayer = gamesByMode('multiplayer').filter((g) => g.available && g.tier === 'live');
+  const party = gamesByMode('multiplayer').filter((g) => g.available && g.tier === 'party');
   const single = gamesByMode('single').filter((g) => g.available);
 
   return (
@@ -41,19 +42,17 @@ export default function HomePage() {
           className="animate-fade-in-up"
         />
 
-        {/* Multiplayer */}
+        {/* Live multiplayer */}
         <section className="space-y-4 animate-fade-in-up-delay-1">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">👥</span>
+              <span className="text-2xl">🎨</span>
               <div>
-                <h2 className="text-lg font-bold">Multiplayer</h2>
-                <p className="text-sm text-muted-foreground">Play with friends</p>
+                <h2 className="text-lg font-bold">Live games</h2>
+                <p className="text-sm text-muted-foreground">Draw, guess &amp; compete online</p>
               </div>
             </div>
-            <Link href="/games" className="text-sm text-primary hover:underline shrink-0">
-              See all →
-            </Link>
+            <Link href="/games" className="text-sm text-primary hover:underline shrink-0">See all →</Link>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             {multiplayer.map((game) => (
@@ -62,6 +61,31 @@ export default function HomePage() {
                 emoji={game.emoji}
                 title={game.title}
                 description={`${game.players} · ${game.duration}`}
+                href={game.href}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Party icebreakers */}
+        <section className="space-y-4 animate-fade-in-up-delay-2">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🎉</span>
+              <div>
+                <h2 className="text-lg font-bold">Party icebreakers</h2>
+                <p className="text-sm text-muted-foreground">Pass &amp; play prompts</p>
+              </div>
+            </div>
+            <Link href="/games" className="text-sm text-primary hover:underline shrink-0">See all →</Link>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {party.slice(0, 3).map((game) => (
+              <MiniBanner
+                key={game.id}
+                emoji={game.emoji}
+                title={game.title}
+                description={game.duration ?? 'Quick round'}
                 href={game.href}
               />
             ))}

@@ -23,11 +23,13 @@ export function GameCard({ game, className }: { game: GameCatalogEntry; classNam
         className={cn(
           'absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full z-10',
           game.available
-            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+            ? game.tier === 'live'
+              ? 'bg-primary/20 text-primary'
+              : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
             : 'bg-secondary text-muted-foreground',
         )}
       >
-        {game.available ? 'Live' : 'Soon'}
+        {game.available ? (game.tier === 'live' ? 'Live game' : 'Live') : 'Soon'}
       </span>
       <CardHeader className="pb-2 relative flex-1">
         <span

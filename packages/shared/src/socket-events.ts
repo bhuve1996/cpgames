@@ -22,6 +22,16 @@ export const SOCKET_EVENTS = {
   GAME_NEXT: 'game:next',
   GAME_END: 'game:end',
   GAME_ERROR: 'game:error',
+
+  // Draw & Guess (Pictionary)
+  DRAW_JOIN: 'draw:join',
+  DRAW_START: 'draw:start',
+  DRAW_STROKE: 'draw:stroke',
+  DRAW_CLEAR: 'draw:clear',
+  DRAW_GUESS: 'draw:guess',
+  DRAW_NEXT: 'draw:next',
+  DRAW_STATE: 'draw:state',
+  DRAW_ERROR: 'draw:error',
 } as const;
 
 export type SocketEvent = (typeof SOCKET_EVENTS)[keyof typeof SOCKET_EVENTS];

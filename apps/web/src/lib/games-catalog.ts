@@ -1,8 +1,10 @@
 /**
  * Games available on Playground.
  * `mode`: multiplayer (real-time or pass-and-play) vs single (solo on your device).
+ * `tier`: multiplayer only — `live` = real-time games, `party` = pass-and-play icebreakers.
  */
 export type GameMode = 'multiplayer' | 'single';
+export type GameTier = 'live' | 'party';
 
 export interface GameCatalogEntry {
   id: string;
@@ -11,6 +13,7 @@ export interface GameCatalogEntry {
   emoji: string;
   href: string;
   mode: GameMode;
+  tier?: GameTier;
   available: boolean;
   players?: string;
   duration?: string;
@@ -22,7 +25,7 @@ export const GAME_MODES: Record<
 > = {
   multiplayer: {
     label: 'Multiplayer',
-    description: 'Play with friends in real time or pass the device around the group.',
+    description: 'Real-time rooms and party games to play together.',
     emoji: '👥',
   },
   single: {
@@ -32,26 +35,53 @@ export const GAME_MODES: Record<
   },
 };
 
+export const MULTIPLAYER_TIERS: Record<GameTier, { label: string; description: string }> = {
+  live: {
+    label: 'Live games',
+    description: 'Real-time rooms — draw, guess, and compete online with friends.',
+  },
+  party: {
+    label: 'Party icebreakers',
+    description: 'Quick pass-and-play prompts for groups in the same room.',
+  },
+};
+
 export const GAMES_CATALOG: GameCatalogEntry[] = [
-  // ── Multiplayer ──────────────────────────────────────────
+  // ── Multiplayer · Live (real games) ───────────────────────
+  {
+    id: 'draw-guess',
+    title: 'Sketch Off',
+    description: 'Live Pictionary — draw on canvas, friends guess in real time. Share a link and play.',
+    emoji: '🎨',
+    href: '/games/draw-guess',
+    mode: 'multiplayer',
+    tier: 'live',
+    available: true,
+    players: '2–12',
+    duration: '15–20 min',
+  },
   {
     id: 'trivia',
     title: 'Live Trivia',
-    description: 'Answer fast, score big. Real-time quiz battles with 2–50 players.',
+    description: 'Real-time quiz battles. Answer fast, climb the leaderboard.',
     emoji: '🧠',
     href: '/games/trivia',
     mode: 'multiplayer',
+    tier: 'live',
     available: true,
     players: '2–50',
     duration: '10–15 min',
   },
+
+  // ── Multiplayer · Party (icebreakers) ─────────────────────
   {
     id: 'would-you-rather',
     title: 'Would You Rather',
-    description: 'Wild dilemmas for the group. Vote, debate, and see crowd picks.',
+    description: 'Wild dilemmas — vote and debate with your group.',
     emoji: '🤔',
     href: '/games/would-you-rather',
     mode: 'multiplayer',
+    tier: 'party',
     available: true,
     players: '2–20',
     duration: '5–10 min',
@@ -59,10 +89,11 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'true-or-false',
     title: 'True or False',
-    description: 'Call out fact or fiction. Fast statements for the whole group.',
+    description: 'Fact or fiction — quick statements for the group.',
     emoji: '✅',
     href: '/games/true-or-false',
     mode: 'multiplayer',
+    tier: 'party',
     available: true,
     players: '2–20',
     duration: '5–8 min',
@@ -70,10 +101,11 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'this-or-that',
     title: 'This or That',
-    description: 'Quick either/or picks. Faster than dilemmas, just as fun to debate.',
+    description: 'Either/or picks — faster than dilemmas.',
     emoji: '⚖️',
     href: '/games/this-or-that',
     mode: 'multiplayer',
+    tier: 'party',
     available: true,
     players: '2–20',
     duration: '5 min',
@@ -81,34 +113,27 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'never-have-i',
     title: 'Never Have I Ever',
-    description: 'Confess or stay silent. Pass the phone and put a finger down.',
+    description: 'Confess or stay silent — classic icebreaker.',
     emoji: '🙈',
     href: '/games/never-have-i-ever',
     mode: 'multiplayer',
+    tier: 'party',
     available: true,
     players: '3–20',
     duration: '10–15 min',
   },
+
+  // ── Multiplayer · Coming soon ───────────────────────────
   {
     id: 'charades',
     title: 'Charades',
-    description: 'Act out prompts without speaking. 60-second rounds for the group.',
+    description: 'Act out prompts — coming back as a live game mode.',
     emoji: '🎭',
-    href: '/games/charades',
-    mode: 'multiplayer',
-    available: true,
-    players: '4–16',
-    duration: '15–20 min',
-  },
-  {
-    id: 'draw-guess',
-    title: 'Draw & Guess',
-    description: 'Sketch prompts while others guess. Classic party game energy.',
-    emoji: '🎨',
     href: '#',
     mode: 'multiplayer',
+    tier: 'live',
     available: false,
-    players: '3–12',
+    players: '4–16',
     duration: '15–20 min',
   },
   {
@@ -118,6 +143,7 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
     emoji: '🔗',
     href: '#',
     mode: 'multiplayer',
+    tier: 'live',
     available: false,
     players: '2–10',
     duration: '5–10 min',
@@ -125,10 +151,11 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'hot-takes',
     title: 'Hot Takes',
-    description: 'Agree or disagree on spicy opinions. Debate encouraged.',
+    description: 'Agree or disagree on spicy opinions.',
     emoji: '🔥',
     href: '#',
     mode: 'multiplayer',
+    tier: 'party',
     available: false,
     players: '3–20',
     duration: '10 min',
@@ -140,6 +167,7 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
     emoji: '🎱',
     href: '#',
     mode: 'multiplayer',
+    tier: 'party',
     available: false,
     players: '4–30',
     duration: '20–30 min',
@@ -160,7 +188,7 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'quick-math',
     title: 'Quick Math',
-    description: 'Solve arithmetic as fast as you can. Speed and accuracy win.',
+    description: 'Solve arithmetic as fast as you can.',
     emoji: '🔢',
     href: '/games/quick-math',
     mode: 'single',
@@ -182,7 +210,7 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'memory-match',
     title: 'Memory Match',
-    description: 'Flip cards and find matching pairs. How few moves can you use?',
+    description: 'Flip cards and find matching pairs.',
     emoji: '🃏',
     href: '/games/memory-match',
     mode: 'single',
@@ -193,7 +221,7 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'reaction-test',
     title: 'Reaction Test',
-    description: 'Tap when the screen turns green. Test your reflexes.',
+    description: 'Tap when the screen turns green.',
     emoji: '⏱️',
     href: '#',
     mode: 'single',
@@ -204,7 +232,7 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'typing-sprint',
     title: 'Typing Sprint',
-    description: 'Type the phrase before time runs out. WPM leaderboard coming soon.',
+    description: 'Type the phrase before time runs out.',
     emoji: '⌨️',
     href: '#',
     mode: 'single',
@@ -215,7 +243,7 @@ export const GAMES_CATALOG: GameCatalogEntry[] = [
   {
     id: 'trivia-solo',
     title: 'Solo Trivia',
-    description: 'Same great quizzes, play alone and chase a personal best.',
+    description: 'Same great quizzes, play alone.',
     emoji: '📚',
     href: '#',
     mode: 'single',
@@ -229,6 +257,10 @@ export const AVAILABLE_GAMES = GAMES_CATALOG.filter((g) => g.available);
 
 export function gamesByMode(mode: GameMode): GameCatalogEntry[] {
   return GAMES_CATALOG.filter((g) => g.mode === mode);
+}
+
+export function gamesByModeAndTier(mode: GameMode, tier: GameTier): GameCatalogEntry[] {
+  return GAMES_CATALOG.filter((g) => g.mode === mode && g.tier === tier);
 }
 
 export function countByMode(mode: GameMode): { total: number; live: number } {
