@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:shared && next build",
+    "build:shared": "npm run build -w @playground/shared --prefix ../..",
     "start": "next start",
     "lint": "next lint"
   },

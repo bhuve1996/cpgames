@@ -21,7 +21,7 @@ export function PromoStrip() {
       <div className="container mx-auto flex items-center justify-center gap-3 px-10 py-2.5 text-center">
         <Sparkles className="h-4 w-4 shrink-0 animate-pulse-soft hidden sm:block" />
         <p className="font-medium">
-          <span className="opacity-90">7 games live</span> — multiplayer &amp; solo. No account needed.{' '}
+          <span className="opacity-90">10 games live</span> — multiplayer &amp; solo. No account needed.{' '}
           <Link href="/games" className="underline underline-offset-2 font-semibold hover:opacity-90">
             Jump in now →
           </Link>

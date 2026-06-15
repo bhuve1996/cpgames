@@ -18,6 +18,7 @@ function emit() {
 }
 
 function scheduleDismiss(id: string, duration: number) {
+  if (typeof window === 'undefined') return;
   window.setTimeout(() => dismiss(id), duration);
 }
 
@@ -35,7 +36,10 @@ export function dismiss(id: string) {
 }
 
 function push(toast: Omit<ToastItem, 'id'>) {
-  const id = crypto.randomUUID();
+  const id =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `toast-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   toasts = [...toasts, { ...toast, id }].slice(-5);
   emit();
   scheduleDismiss(id, toast.duration);
